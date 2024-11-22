@@ -78,5 +78,6 @@ public class ChatServerGUI {
     public static void main(String[] args) {
         // Launch the server GUI
         SwingUtilities.invokeLater(ChatServerGUI::new);
+        
     }
 }
