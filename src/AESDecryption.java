@@ -20,6 +20,7 @@ public class AESDecryption {
 
         // Initialize cipher for decryption
         cipher.init(Cipher.DECRYPT_MODE, secretKeySpec, ivSpec);
+        System.out.println("Decryption key: " + new String(key, "UTF-8"));
 
         // Decrypt the ciphertext and return the plaintext as a string
         byte[] plaintextBytes = cipher.doFinal(ciphertext);

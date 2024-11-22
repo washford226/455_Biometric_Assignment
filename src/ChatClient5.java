@@ -66,6 +66,8 @@ public class ChatClient5 {
         new Thread(() -> receiveMessages()).start();
     }
 
+    
+
     public static void main(String[] args) {
         try {
             ChatClient5 client = new ChatClient5();
