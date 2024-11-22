@@ -1,44 +1,101 @@
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
-import java.security.PublicKey;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.*;
+import java.net.*;
 
 public class ChatServer {
-    private PrivateKey privateKey; // Server's private RSA key
-    private PublicKey publicKey;  // Server's public RSA key
-    private byte[] aesKey;        // Placeholder for AES key (shared with client)
-    private Object clientConnection; // Placeholder for client connection
-    private Object clientAddress;    // Placeholder for client address
+    private ServerSocket serverSocket;
+    private Socket clientSocket;
+    private PrintWriter out;
+    private BufferedReader in;
 
-    public ChatServer() {
+    private JFrame frame;
+    private JTextArea chatBox;
+    private JTextField messageField;
+    private JButton sendButton;
+
+    public ChatServer(int port) {
         try {
-            // Generate RSA key pair (2048 bits) for secure AES key exchange
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-            keyGen.initialize(2048);
-            KeyPair keyPair = keyGen.generateKeyPair();
-            this.privateKey = keyPair.getPrivate();
-            this.publicKey = keyPair.getPublic();
+            // Set up the server
+            serverSocket = new ServerSocket(port);
+            System.out.println("Server is waiting for a client on port " + port + "...");
 
-            // Placeholder for AES key and client connection details
-            this.aesKey = null;
-            this.clientConnection = null;
-            this.clientAddress = null;
+            // Accept a client connection
+            clientSocket = serverSocket.accept();
+            System.out.println("Client connected!");
 
-            // Set up the graphical user interface (GUI) for the chat server
-            setupGui();
+            // Set up streams for communication
+            out = new PrintWriter(clientSocket.getOutputStream(), true);
+            in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+
+            // Set up the GUI
+            setupGUI();
+
+            // Start a thread to listen for incoming messages from the client
+            new Thread(this::receiveMessages).start();
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void setupGui() {
-        // Placeholder for GUI setup logic
-        System.out.println("Setting up GUI...");
+    private void setupGUI() {
+        frame = new JFrame("Chat Server");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(500, 400);
+
+        // Chat box to display messages
+        chatBox = new JTextArea();
+        chatBox.setEditable(false);
+        JScrollPane scrollPane = new JScrollPane(chatBox);
+
+        // Message field to type messages
+        messageField = new JTextField(30);
+
+        // Send button to send messages
+        sendButton = new JButton("Send");
+        sendButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                sendMessage();
+            }
+        });
+
+        // Bottom panel for the message field and send button
+        JPanel bottomPanel = new JPanel();
+        bottomPanel.setLayout(new BorderLayout());
+        bottomPanel.add(messageField, BorderLayout.CENTER);
+        bottomPanel.add(sendButton, BorderLayout.EAST);
+
+        // Add components to frame
+        frame.add(scrollPane, BorderLayout.CENTER);
+        frame.add(bottomPanel, BorderLayout.SOUTH);
+
+        frame.setVisible(true);
+    }
+
+    private void receiveMessages() {
+        try {
+            String message;
+            while ((message = in.readLine()) != null) {
+                chatBox.append("Client: " + message + "\n");
+            }
+        } catch (IOException e) {
+            chatBox.append("Client disconnected.\n");
+        }
+    }
+
+    private void sendMessage() {
+        String message = messageField.getText();
+        if (!message.isEmpty()) {
+            out.println(message); // Send message to the client
+            chatBox.append("You: " + message + "\n"); // Show it in the chat box
+            messageField.setText(""); // Clear the input field
+        }
     }
 
     public static void main(String[] args) {
-        // Initialize the chat server
-        ChatServer server = new ChatServer();
-        System.out.println("Chat server is ready!");
+        SwingUtilities.invokeLater(() -> new ChatServer(12345));
     }
 }
