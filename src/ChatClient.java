@@ -27,6 +27,11 @@ public class ChatClient {
     private SecretKeySpec aesKey;
 
     public ChatClient(String host, int port) {
+        BiometricAuthenticator authenticator = new BiometricAuthenticator();
+        if (!authenticator.authenticate()) {
+            System.out.println("Authentication failed. Exiting...");
+            return; // Exit if authentication fails
+        }
         try {
             // Connect to the server
             socket = new Socket(host, port);
