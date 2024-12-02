@@ -1,10 +1,10 @@
 public class BiometricAuthenticatorMain {
     public static void main(String[] args) {
         BiometricAuthenticator authenticator = new BiometricAuthenticator();
-        
+
         System.out.println("Welcome to the Biometric Authentication Test");
         System.out.println("--------------------------------------------");
-        
+
         // Test successful authentication
         System.out.println("Test 1: Successful Authentication");
         boolean result = authenticator.authenticate();
