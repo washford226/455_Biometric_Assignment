@@ -38,7 +38,7 @@ public class BiometricAuthenticatorGUI extends JFrame {
         JPanel panel = new JPanel();
         panel.setLayout(new GridLayout(4, 1)); // Use GridLayout for 4 rows
 
-       
+        
 
         // Prompt label for fingerprint ID entry
         JLabel promptLabel = new JLabel("Please enter your fingerprint ID:");
