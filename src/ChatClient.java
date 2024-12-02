@@ -36,64 +36,48 @@ public class ChatClient {
     private SecretKeySpec aesKey;
 
     public ChatClient(String host, int port) {
-        // Instantiate BiometricAuthenticatorGUI for authentication
-        BiometricAuthenticatorGUI authenticator = new BiometricAuthenticatorGUI();
-        
-        // Wait for user to authenticate before proceeding
-        if (!authenticator.authenticate()) {
-            System.out.println("Authentication failed. Exiting...");
-            return; // Exit if authentication fails
-        }
+       try {
+           socket = new Socket(host, port);
+           System.out.println("Connected to the server!");
 
-        try {
-            // Connect to the server
-            socket = new Socket(host, port);
-            System.out.println("Connected to the server!");
+           in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+           out = new PrintWriter(socket.getOutputStream(), true);
 
-            // Set up input and output streams
-            in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            out = new PrintWriter(socket.getOutputStream(), true);
+           ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
+           PublicKey serverPublicKey = (PublicKey) objectIn.readObject();
 
-            // Receive server's public RSA key
-            ObjectInputStream objectIn = new ObjectInputStream(socket.getInputStream());
-            PublicKey serverPublicKey = (PublicKey) objectIn.readObject();
+           KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
+           keyGen.initialize(2048);
+           var keyPair = keyGen.generateKeyPair();
+           PrivateKey privateKey = keyPair.getPrivate();
+           PublicKey publicKey = keyPair.getPublic();
 
-            // Send client's public RSA key
-            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-            keyGen.initialize(2048);
-            var keyPair = keyGen.generateKeyPair();
-            PrivateKey privateKey = keyPair.getPrivate();
-            PublicKey publicKey = keyPair.getPublic();
+           ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
+           objectOut.writeObject(publicKey);
 
-            ObjectOutputStream objectOut = new ObjectOutputStream(socket.getOutputStream());
-            objectOut.writeObject(publicKey);
+           String encryptedAesKey = in.readLine();
+           Cipher rsaCipher = Cipher.getInstance("RSA");
+           rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
+           byte[] aesKeyBytes = rsaCipher.doFinal(Base64.getDecoder().decode(encryptedAesKey));
+           aesKey = new SecretKeySpec(aesKeyBytes, "AES");
 
-            // Receive encrypted AES key and decrypt it
-            String encryptedAesKey = in.readLine();
-            Cipher rsaCipher = Cipher.getInstance("RSA");
-            rsaCipher.init(Cipher.DECRYPT_MODE, privateKey);
-            byte[] aesKeyBytes = rsaCipher.doFinal(Base64.getDecoder().decode(encryptedAesKey));
-            aesKey = new SecretKeySpec(aesKeyBytes, "AES");
+           setupGUI();
 
-            // Set up GUI for chat client
-            setupGUI();
+           new Thread(this::receiveMessages).start();
 
-            // Start receiving messages
-            new Thread(this::receiveMessages).start();
+       } catch (Exception e) {
+           e.printStackTrace();
+       }
+   }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void setupGUI() {
-        frame = new JFrame("Chat Client");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        
-        frame.setSize(500, 400);
-        
-        chatBox = new JTextArea();
-        
+   private void setupGUI() {
+       frame = new JFrame("Chat Client");
+       frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+       
+       frame.setSize(500, 400);
+       
+       chatBox = new JTextArea();
+       
        chatBox.setFont(new Font("Rockwell", Font.PLAIN, 12));
        chatBox.setEditable(false);
        
